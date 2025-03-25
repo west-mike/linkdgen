@@ -118,23 +118,36 @@ export async function POST(request: NextRequest) {
 
             // Provide specific error message based on API errors
             if (aiError instanceof Error) {
+                const errorMessage = aiError.message;
+
+                // Check for 503 Service Unavailable errors
+                if (errorMessage.includes('503 Service Unavailable') ||
+                    errorMessage.includes('service is currently unavailable') ||
+                    (aiError as any).status === 503) {
+
+                    return NextResponse.json(
+                        { error: 'The Backend is currently experiencing rate limiting issues, please try again later.' },
+                        { status: 503 }
+                    );
+                }
+
                 // Check for common Gemini API errors
-                if (aiError.message.includes('INVALID_ARGUMENT')) {
+                if (errorMessage.includes('INVALID_ARGUMENT')) {
                     return NextResponse.json(
                         { error: 'Invalid input. Please try a different prompt.' },
                         { status: 400 }
                     );
-                } else if (aiError.message.includes('PERMISSION_DENIED')) {
+                } else if (errorMessage.includes('PERMISSION_DENIED')) {
                     return NextResponse.json(
                         { error: 'Content policy violation. Please try a different prompt.' },
                         { status: 400 }
                     );
-                } else if (aiError.message.includes('RESOURCE_EXHAUSTED')) {
+                } else if (errorMessage.includes('RESOURCE_EXHAUSTED')) {
                     return NextResponse.json(
                         { error: 'AI service quota exceeded. Please try again later.' },
                         { status: 429 }
                     );
-                } else if (aiError.message.includes('UNAVAILABLE')) {
+                } else if (errorMessage.includes('UNAVAILABLE')) {
                     return NextResponse.json(
                         { error: 'AI service is currently unavailable. Please try again later.' },
                         { status: 503 }
