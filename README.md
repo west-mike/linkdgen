@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project with [Gemini](https://ai.google.dev/gemini-api/docs) integration.
 
+View it [here](https://linkdgen.westmike.com/).
+
 This a simple project that's meant to generate the types of LinkedIn posts you often see (emojis, buzzwords, more emojis).
 
 ## Input
