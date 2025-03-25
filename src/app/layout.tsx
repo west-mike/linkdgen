@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Gamja_Flower } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react"
 import "./globals.css";
 
 const gamja = Gamja_Flower({
@@ -25,6 +26,7 @@ export default function RootLayout({
         {/* Main content with grid */}
         <div className="w-full h-full grid grid-rows-8 grid-cols-8">
           {children}
+          <Analytics />
         </div>
 
         {/* Absolutely positioned elements that don't affect the grid */}

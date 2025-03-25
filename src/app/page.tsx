@@ -16,6 +16,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [remainingRequests, setRemainingRequests] = useState(5);
+  const [error, setError] = useState<string | null>(null);
 
   // Function to count tokens, where 1 token ≈ 4 characters
   const calculateTokens = (text: string) => {
@@ -48,12 +49,13 @@ export default function Home() {
 
   const generatePost = async () => {
     try {
+      setError(null); // Clear previous errors
       setIsGenerating(true);
       setGenerated(true);
 
       const sanitizedInput = sanitizeInput(inputAreaContent.trim());
       if (!sanitizedInput) {
-        alert("Please enter some text before generating a post.");
+        setError("Please enter some text before generating a post.");
         return;
       }
 
@@ -69,15 +71,34 @@ export default function Home() {
         }),
       });
 
-      // Check for rate limit exceeded
+      // Handle specific HTTP status codes
       if (response.status === 429) {
         const data = await response.json();
-        alert(data.error || "You've reached your limit of 5 requests per day.");
+        setError(data.error || "You've reached your limit of 5 requests per day.");
+        return;
+      }
+
+      if (response.status === 413) {
+        setError("Your prompt is too long. Please shorten it and try again.");
+        return;
+      }
+
+      if (response.status === 400) {
+        const data = await response.json();
+        setError(data.error || "Invalid request. Please check your input and try again.");
+        return;
+      }
+
+      if (response.status === 500) {
+        const data = await response.json();
+        setError(data.error || "Server error. Our AI service may be experiencing issues. Please try again later.");
         return;
       }
 
       if (!response.ok) {
-        throw new Error('API request failed');
+        const data = await response.json();
+        setError(data.error || `API error (${response.status}): ${response.statusText}`);
+        return;
       }
 
       const data = await response.json();
@@ -94,8 +115,9 @@ export default function Home() {
       setTokenCount(calculateTokens(sanitizedResult));
 
     } catch (error) {
+      // Handle network errors or JSON parsing errors
       console.error("Error generating content:", error);
-      alert("An error occurred while generating content. Please try again.");
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -151,6 +173,18 @@ export default function Home() {
             style={{ whiteSpace: "pre-wrap" }}
           >
             <MarkdownRenderer content={responseAreaContent} />
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute top-2 left-0 right-0 mx-auto w-[90%] bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-md text-sm text-center">
+            <p>{error}</p>
+            <button
+              className="absolute top-1 right-1 text-red-700 hover:text-red-900"
+              onClick={() => setError(null)}
+            >
+              ×
+            </button>
           </div>
         )}
 
