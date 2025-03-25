@@ -143,7 +143,7 @@ export default function Home() {
             name="post_text"
             placeholder={inputToggleMode === "generate" ? "Enter your prompt..." : "Paste your post..."}
             onChange={handleTextChange}
-            maxLength="40000"
+            maxLength={40000}
           ></textarea>
         ) : (
           <div
