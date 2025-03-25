@@ -18,6 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-screen">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <body
         className={`${gamja.className} antialiased bg-orange-200 w-full h-screen min-h-screen text-blue-500 relative`}
       >

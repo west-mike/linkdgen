@@ -103,7 +103,7 @@ export default function Home() {
 
   return (
     <div className="col-span-8 row-span-8 grid grid-cols-subgrid grid-rows-subgrid text-blue-500 text-l xl:text-xl 2xl:text-2xl">
-      <div className="relative grid row-start-2 row-end-3 col-start-3 col-end-7 border-4 border-blue-500 border-round rounded-tl-lg rounded-tr-lg">
+      <div className="relative grid row-start-2 row-end-3 md:col-start-3 md:col-end-7 col-start-1 col-end-9 border-4 border-blue-500 border-round rounded-tl-lg rounded-tr-lg">
         <input
           type="text"
           placeholder="Title"
@@ -134,7 +134,7 @@ export default function Home() {
         </ToggleGroup>
       </div>
 
-      <div className="relative grid row-start-3 row-end-7 col-start-3 col-end-7 border-4 border-blue-500 border-round rounded-bl-lg rounded-br-lg">
+      <div className="relative grid row-start-3 md:row-end-7 row-end-8 md:col-start-3 md:col-end-7 col-start-1 col-end-9 border-4 border-blue-500 border-round rounded-bl-lg rounded-br-lg">
         {displayToggleMode === "prompt" ? (
           <textarea
             ref={inputTextAreaRef}
@@ -160,14 +160,14 @@ export default function Home() {
         </div>
 
         <button
-          className="absolute bottom-1 right-4 rounded-lg bg-blue-500 text-white text-center flex items-center justify-center h-[25px] w-[200px] py-1 hover:cursor-pointer hover:bg-blue-400 2xl:text-xl s:text-l"
+          className="absolute bottom-1 right-4 rounded-lg bg-blue-500 text-white text-center flex items-center justify-center md:h-[25px] md:w-[200px] h-[20px] w-[100px] py-1 hover:cursor-pointer hover:bg-blue-400 2xl:text-xl s:text-l"
           onClick={generatePost}
           disabled={isGenerating}
         >
           {isGenerating ? "Generating..." : "Generate!"}
         </button>
       </div>
-      {generated && <div className="grid row-start-7 row-end-8 col-start-3 col-end-4">
+      {generated && <div className="grid md:row-start-7 md:row-end-8 md:col-start-3 md:col-end-4 row-start-8 row-end-9 col-start-5 col-end-6">
         <ToggleGroup
           type="single"
           defaultValue="prompt"
