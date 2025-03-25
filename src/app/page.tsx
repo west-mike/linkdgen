@@ -1,9 +1,7 @@
 "use client"; // Add this to enable client-side hooks
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import MarkdownRenderer from "@/components/utils/markdownrenderer";
 import DOMPurify from 'dompurify';
 
