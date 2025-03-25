@@ -107,7 +107,7 @@ export default function Home() {
         <input
           type="text"
           placeholder="Title"
-          className="absolute top-1/2 left-4 transform -translate-y-1/2 border-blue-400 rounded-lg border-2 w-[63%] h-[40%] text-left align-middle"
+          className="absolute top-1/2 left-4 transform -translate-y-1/2 border-blue-400 rounded-lg border-2 md:w-[63%] w-[60%] h-[40%] text-left align-middle"
         />
 
         <ToggleGroup
@@ -154,9 +154,9 @@ export default function Home() {
           </div>
         )}
 
-        <div className="absolute bottom-1 left-4 flex items-center gap-4">
-          <span>Token Count: {tokenCount}/10000</span>
-          <span className="text-sm">(Requests remaining today: {remainingRequests}/5)</span>
+        <div className="absolute bottom-1 left-4 flex items-center md:gap-4 gap-1">
+          <span className="text-xs md:text-sm">Token Count: {tokenCount}/10000</span>
+          <span className="text-xs md:text-sm">(Requests remaining today: {remainingRequests}/5)</span>
         </div>
 
         <button
