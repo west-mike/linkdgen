@@ -17,7 +17,7 @@ export default function Home() {
   const [displayToggleMode, setDisplayToggleMode] = useState("prompt");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
-
+  const [remainingRequests, setRemainingRequests] = useState(5);
 
   // Function to count tokens, where 1 token ≈ 4 characters
   const calculateTokens = (text: string) => {
@@ -55,11 +55,11 @@ export default function Home() {
 
       const sanitizedInput = sanitizeInput(inputAreaContent.trim());
       if (!sanitizedInput) {
-        alert("Please enter some text in the text box before generating a post.");
+        alert("Please enter some text before generating a post.");
         return;
       }
 
-      // Call your secure API route instead of directly using Gemini
+      // Call your API route
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -71,12 +71,26 @@ export default function Home() {
         }),
       });
 
+      // Check for rate limit exceeded
+      if (response.status === 429) {
+        const data = await response.json();
+        alert(data.error || "You've reached your limit of 5 requests per day.");
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('API request failed');
       }
 
       const data = await response.json();
-      // Sanitize the AI response
+
+      // Display remaining requests
+      if (data.remainingRequests !== undefined) {
+        console.log(`You have ${data.remainingRequests} requests remaining today.`);
+        setRemainingRequests(data.remainingRequests);
+      }
+
+      // Sanitize and set response
       const sanitizedResult = sanitizeInput(data.content);
       setResponseAreaContent(sanitizedResult);
       setTokenCount(calculateTokens(sanitizedResult));
@@ -142,8 +156,9 @@ export default function Home() {
           </div>
         )}
 
-        <div className="absolute bottom-1 left-4">
-          Token Count: {tokenCount}/10000
+        <div className="absolute bottom-1 left-4 flex items-center gap-4">
+          <span>Token Count: {tokenCount}/10000</span>
+          <span className="text-sm">(Requests remaining today: {remainingRequests}/5)</span>
         </div>
 
         <button

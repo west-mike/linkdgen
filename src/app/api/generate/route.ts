@@ -1,9 +1,34 @@
 import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from 'next/headers';
+
+const MAX_REQUESTS_PER_DAY = 5;
 
 export async function POST(request: NextRequest) {
     try {
+        // Get today's date as string (YYYY-MM-DD format)
+        const today = new Date().toISOString().split('T')[0];
+
+        // Get or set cookie for tracking requests
+        const cookieStore = await cookies();
+        const requestCountCookie = cookieStore.get(`request_count_${today}`);
+
+        // Current count from cookie or start at 0
+        let currentCount = requestCountCookie ? parseInt(requestCountCookie.value) : 0;
+
+        // Check if user has exceeded their limit
+        if (currentCount >= MAX_REQUESTS_PER_DAY) {
+            return NextResponse.json(
+                { error: 'You have reached your limit of 5 requests for today. Please try again tomorrow.' },
+                { status: 429 }
+            );
+        }
+
+        // Extract request data
         const { prompt, mode } = await request.json();
+
+        // Initialize the AI model
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
         // Safety settings
         const safetySettings = [
@@ -39,10 +64,7 @@ export async function POST(request: NextRequest) {
       Your goal is to make them detailed, engaging, and easy to read. You should also make sure that the post is free of any grammatical or statistical errors.
     `;
 
-        // Initialize the AI model (server-side only, with proper API key)
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-        // Select the appropriate model based on mode
+        // Select model based on mode
         const model = mode === "generate"
             ? genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings, systemInstruction: gen_context })
             : genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings, systemInstruction: edit_context });
@@ -51,8 +73,28 @@ export async function POST(request: NextRequest) {
         const result = await model.generateContent(prompt);
         const text = result.response.text();
 
-        // Return the generated content
-        return NextResponse.json({ content: text });
+        // Increment the count for today
+        currentCount++;
+
+        // Create response
+        const response = NextResponse.json({
+            content: text,
+            remainingRequests: MAX_REQUESTS_PER_DAY - currentCount
+        });
+
+        // Set cookie with end of day expiration
+        const midnight = new Date();
+        midnight.setHours(23, 59, 59, 999);
+
+        // Set the updated cookie
+        response.cookies.set({
+            name: `request_count_${today}`,
+            value: currentCount.toString(),
+            expires: midnight,
+            path: '/',
+        });
+
+        return response;
 
     } catch (error) {
         console.error("API route error:", error);
