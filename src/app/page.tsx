@@ -1,103 +1,183 @@
-import Image from "next/image";
+"use client"; // Add this to enable client-side hooks
+
+import { useState, useEffect, useRef } from "react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
+import MarkdownRenderer from "@/components/utils/markdownrenderer";
+import DOMPurify from 'dompurify';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // state variables
+  const [tokenCount, setTokenCount] = useState(0);
+  const [responseAreaContent, setResponseAreaContent] = useState("");
+  const [inputAreaContent, setInputAreaContent] = useState("");
+  const inputTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  const [inputToggleMode, setInputToggleMode] = useState("generate");
+  const [displayToggleMode, setDisplayToggleMode] = useState("prompt");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+  // Function to count tokens, where 1 token ≈ 4 characters
+  const calculateTokens = (text: string) => {
+    if (!text) return 0;
+    // Count the number of characters and divide by 4 (rounded up)
+    return Math.ceil(text.length / 4);
+  };
+
+  // Sanitize any user input
+  const sanitizeInput = (input: string): string => {
+    return DOMPurify.sanitize(input);
+  };
+
+  // Update token count on text change
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const sanitizedInput = sanitizeInput(e.target.value);
+    setInputAreaContent(sanitizedInput);
+    const count = calculateTokens(sanitizedInput);
+    setTokenCount(count);
+  };
+
+  // Handle input toggle change 
+  const handleInputToggleChange = (value: string) => {
+    if (value) setInputToggleMode(value);
+  };
+  // Handle display toggle change 
+  const handleDisplayToggleChange = (value: string) => {
+    if (value) setDisplayToggleMode(value);
+  };
+
+  const generatePost = async () => {
+    try {
+      setIsGenerating(true);
+      setGenerated(true);
+
+      const sanitizedInput = sanitizeInput(inputAreaContent.trim());
+      if (!sanitizedInput) {
+        alert("Please enter some text in the text box before generating a post.");
+        return;
+      }
+
+      // Call your secure API route instead of directly using Gemini
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: sanitizedInput,
+          mode: inputToggleMode
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+
+      const data = await response.json();
+      // Sanitize the AI response
+      const sanitizedResult = sanitizeInput(data.content);
+      setResponseAreaContent(sanitizedResult);
+      setTokenCount(calculateTokens(sanitizedResult));
+
+    } catch (error) {
+      console.error("Error generating content:", error);
+      alert("An error occurred while generating content. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="col-span-8 row-span-8 grid grid-cols-subgrid grid-rows-subgrid text-blue-500 text-l xl:text-xl 2xl:text-2xl">
+      <div className="relative grid row-start-2 row-end-3 col-start-3 col-end-7 border-4 border-blue-500 border-round rounded-tl-lg rounded-tr-lg">
+        <input
+          type="text"
+          placeholder="Title"
+          className="absolute top-1/2 left-4 transform -translate-y-1/2 border-blue-400 rounded-lg border-2 w-[63%] h-[40%] text-left align-middle"
+        />
+
+        <ToggleGroup
+          type="single"
+          defaultValue="generate"
+          value={inputToggleMode}
+          onValueChange={handleInputToggleChange}
+          className="absolute top-1/2 right-4 transform -translate-y-1/2 border-blue-400 rounded-lg border-2 w-[30%] h-[40%] flex items-center justify-center text-l xl:text-xl 2xl:text-2xl"
+        >
+          <ToggleGroupItem
+            value="generate"
+            aria-label="Toggle generate mode"
+            className="data-[state=on]:bg-blue-500 data-[state=on]:text-white hover:cursor-pointer h-[100%] hover:bg-blue-200"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            From Prompt
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="post"
+            aria-label="Toggle edit post mode"
+            className="data-[state=on]:bg-blue-500 data-[state=on]:text-white hover:cursor-pointer h-[100%] hover:bg-blue-200"
           >
-            Read our docs
-          </a>
+            From Post
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      <div className="relative grid row-start-3 row-end-7 col-start-3 col-end-7 border-4 border-blue-500 border-round rounded-bl-lg rounded-br-lg">
+        {displayToggleMode === "prompt" ? (
+          <textarea
+            ref={inputTextAreaRef}
+            value={inputAreaContent}
+            className="scrollabletextbox m-4 mb-8 border-blue-800 border-opacity-30 border-2 rounded-lg"
+            name="post_text"
+            placeholder={inputToggleMode === "generate" ? "Enter your prompt..." : "Paste your post..."}
+            onChange={handleTextChange}
+            maxLength="40000"
+          ></textarea>
+        ) : (
+          <div
+            className="scrollabletextbox m-4 mb-8 border-blue-800 border-opacity-30 border-2 rounded-lg p-2 overflow-y-auto"
+            style={{ whiteSpace: "pre-wrap" }}
+          >
+            <MarkdownRenderer content={responseAreaContent} />
+          </div>
+        )}
+
+        <div className="absolute bottom-1 left-4">
+          Token Count: {tokenCount}/10000
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        <button
+          className="absolute bottom-1 right-4 rounded-lg bg-blue-500 text-white text-center flex items-center justify-center h-[25px] w-[200px] py-1 hover:cursor-pointer hover:bg-blue-400 2xl:text-xl s:text-l"
+          onClick={generatePost}
+          disabled={isGenerating}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          {isGenerating ? "Generating..." : "Generate!"}
+        </button>
+      </div>
+      {generated && <div className="grid row-start-7 row-end-8 col-start-3 col-end-4">
+        <ToggleGroup
+          type="single"
+          defaultValue="prompt"
+          value={displayToggleMode}
+          onValueChange={handleDisplayToggleChange}
+          className=" border-blue-400 rounded-bl-lg rounded-br-lg border-b-4 border-l-4 border-r-4 flex items-center h-[40px] w-[200px] justify-center text-l xl:text-xl 2xl:text-2xl"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <ToggleGroupItem
+            value="response"
+            aria-label="View AI response"
+            className="data-[state=on]:bg-blue-500 data-[state=on]:text-white hover:cursor-pointer "
+          >
+            Response
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="prompt"
+            aria-label="View original prompt"
+            className="data-[state=on]:bg-blue-500 data-[state=on]:text-white hover:cursor-pointer"
+          >
+            Prompt
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>}
     </div>
   );
 }
